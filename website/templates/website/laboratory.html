@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Химическая лаборатория</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+            min-height: calc(100vh - 103px);
+            user-select: none;
+        }
+
+        /* Навигационная панель */
+        nav {
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+        
+        nav .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+        }
+        
+        nav ul li {
+            margin: 0 15px;
+        }
+        
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            transition: 0.3s;
+        }
+        
+        nav ul li a:hover {
+            text-decoration: underline;
+        }
+        
+
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px; /* Уменьшенный отступ */
+        }
+
+        .sidebar {
+            width: 200px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .draggable-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .lab-bench {
+            flex-grow: 1;
+            background: #e8ecef url('/static/img/1.png') no-repeat center center;;
+            height: 500px;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .draggable {
+            width: 80px;
+            height: 80px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            transition: transform 0.2s;
+            text-align: center;
+            padding: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .draggable:hover {
+            transform: scale(1.05);
+        }
+
+        .flask {
+            width: 60px;
+            height: 100px;
+            background: rgba(232, 236, 239, 0.4); /* Более прозрачная колба */
+            border: 3px solid #4a90e2;
+            border-radius: 0 0 30px 30px;
+            position: absolute;
+            cursor: move;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+
+        .liquid {
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            border-radius: 0 0 25px 25px;
+            transition: height 0.5s;
+        }
+
+        .burner {
+            width: 100px;
+            height: 40px;
+            background: #666;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .flame {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to top, #ff4800 0%, #ffa500 50%, #ffff00 100%);
+            border-radius: 50% 50% 20% 20%;
+            opacity: 0;
+            animation: flame-flicker 0.3s infinite alternate;
+            box-shadow: 0 0 10px #ff0000;
+            z-index: 4;
+        }
+
+        /* Стили для штатива */
+        .tripod {
+            position: absolute;
+            bottom: 20px;
+            left: calc(50% + 120px);
+            z-index: 6;
+            height: 180px;
+        }
+
+        .tripod-stand {
+            position: absolute;
+            bottom: 0;
+            width: 10px;
+            height: 180px;
+            background: #333;
+        }
+
+        .tripod-arm {
+            position: absolute;
+            top: 0;
+            left: -120px;
+            width: 120px;
+            height: 10px;
+            background: #333;
+        }
+
+        .tripod-ring {
+            position: absolute;
+            top: -3px;
+            left: -160px;
+            width: 80px;
+            height: 20px;
+            background: #333;
+            z-index: 7;
+            border-radius: 0;
+        }
+
+        @keyframes flame-flicker {
+            0% { height: 55px; }
+            100% { height: 65px; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 10px auto 20px; /* Измененные отступы */
+            width: fit-content;
+            border-radius: 5px;
+            position: relative;
+            z-index: 20;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #4a90e2;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #357ebd;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1001; /* Выше оверлея */
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            cursor: default;
+            transition: none;
+            margin: 0;
+        }
+
+        .modal.smaller {
+            width: 450px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: move;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            color: #777;
+            background: none;
+            border: none;
+            padding: 0 10px;
+        }
+
+        .close-btn:hover {
+            color: #ff0000;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            margin-top: 15px;
+        }
+
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .thermometer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .thermometer-bar {
+            width: 20px;
+            height: 100px;
+            background: #eee;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .thermometer-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #4a90e2, #ff5722);
+            transition: height 0.5s;
+        }
+
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 77, 77, 0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 2000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: none;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        @keyframes bubbleUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+
+        @keyframes flashOut {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            25% { transform: translate(-1px, -2px); }
+            50% { transform: translate(-3px, 0px); }
+            75% { transform: translate(3px, 2px); }
+            100% { transform: translate(1px, -1px); }
+        }
+
+        @keyframes smokeRise {
+            0% { transform: translateY(0); opacity: 0.3; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        @keyframes gasRise {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-60px); opacity: 0; }
+        }
+        
+        @keyframes precipitate {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes boil {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes sparkle {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        @keyframes dropFall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(20px); opacity: 0; }
+        }
+        
+        @keyframes fragmentFly {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--end-x), var(--end-y)) rotate(360deg); opacity: 0; }
+        }
+        
+        @keyframes flashExpand {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        
+        .flask-content {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .no-reaction-text {
+            white-space: pre-line;
+            line-height: 1.6;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            border-left: 4px solid #ff4d4d;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.95em;
+            margin: 10px 0;
+        }
+
+        .no-video .video-container {
+            display: none;
+        }
+
+        /* Анимация осадка */
+        @keyframes precipitateForm {
+            0% { height: 0; opacity: 0; }
+            100% { height: 20px; opacity: 1; }
+        }
+
+        /* Анимация для грозы */
+        @keyframes thunderFlash {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            20% { opacity: 0; }
+            30% { opacity: 1; }
+            40% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+        
+        /* Оверлей для безопасности */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+        
+        /* Стили для кусочков цинка */
+        .zinc-piece {
+            position: absolute;
+            background: #7f7f7f;
+            border-radius: 50%;
+            z-index: 15;
+        }
+        
+        @keyframes dissolve {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        /* Анимация трещин */
+        .crack {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 20;
+        }
+        
+        .crack-line {
+            position: absolute;
+            background: white;
+            transform-origin: 0 0;
+        }
+        
+        @keyframes crackAppear {
+            0% { width: 0; opacity: 0; }
+            100% { width: 100%; opacity: 1; }
+        }
+        
+        @keyframes breakFlask {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'partials/navbar.html' %}
+    <div class="container">
+        <div class="sidebar">
+            <div class="draggable-container">
+                <div class="draggable" draggable="true" data-type="flask">Колба</div>
+                <div class="draggable" draggable="true" data-type="KMnO4">KMnO₄</div>
+                <div class="draggable" draggable="true" data-type="H2SO4">H₂SO₄</div>
+                <div class="draggable" draggable="true" data-type="isopropanol">(CH₃)₂CHOH</div>
+                <div class="draggable" draggable="true" data-type="Zn">Zn</div>
+                <div class="draggable" draggable="true" data-type="HCl">HCl</div>
+                <div class="draggable" draggable="true" data-type="AgNO3">AgNO₃</div>
+                <div class="draggable" draggable="true" data-type="NaCl">NaCl</div>
+                <div class="draggable" draggable="true" data-type="KSCN">KSCN</div>
+                <div class="draggable" draggable="true" data-type="FeCl3">FeCl₃</div>
+                <div class="draggable" draggable="true" data-type="CuSO4_hydrate">CuSO₄·5H₂O</div>
+                <div class="draggable" draggable="true" data-type="Mg">Mg</div>
+                <div class="draggable" draggable="true" data-type="Na">Na</div>
+                <div class="draggable" draggable="true" data-type="H2O2">H₂O₂</div>
+            </div>
+        </div>
+
+        <div class="lab-bench" id="bench">
+            <div class="burner" id="burner">
+                <div class="flame" id="flame"></div>
+            </div>
+            
+            <div class="tripod" id="tripod">
+                <div class="tripod-stand"></div>
+                <div class="tripod-arm"></div>
+                <div class="tripod-ring" id="tripod-ring"></div>
+            </div>
+            
+            <div class="thermometer">
+                <div class="thermometer-bar">
+                    <div class="thermometer-fill" id="thermometer-fill"></div>
+                </div>
+                <div id="temperature">25°C</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="toggleBurner">Включить горелку</button>
+        <button id="infoBtn">Информация о реакции</button>
+        <button id="undo">Отменить действие</button>
+        <button id="reset">Очистить стол</button>
+        <button class="help-button" onclick="showExamples()">Справка</button>
+    </div>
+
+    <div class="notification" id="notification"></div>
+    
+    <!-- Оверлей для безопасности -->
+    <div class="modal-overlay" id="safety-modal-overlay"></div>
+
+    <!-- Модальное окно безопасности -->
+    <div id="safety-modal" class="modal">
+        <div class="modal-header">
+            <h3>Инструктаж по технике безопасности</h3>
+        </div>
+        <p>Перед началом работы в лаборатории ознакомьтесь с правилами безопасности:</p>
+        <ul>
+            <li>Всегда надевайте защитные очки и перчатки</li>
+            <li>Не пробуйте вещества на вкус</li>
+            <li>Не нюхайте вещества непосредственно из пробирки</li>
+            <li>Соблюдайте осторожность при работе с нагревательными приборами</li>
+            <li>Не оставляйте эксперименты без присмотра</li>
+            <li>В случае аварии немедленно сообщите преподавателю</li>
+        </ul>
+        <p><strong>Помните:</strong> В реальной лаборатории все эксперименты должны проводиться под руководством преподавателя!</p>
+        <button onclick="closeSafetyModal()">Я ознакомлен с инструкцией</button>
+    </div>
+
+    <!-- Модальное окно результата -->
+    <div id="result-modal" class="modal">
+        <div class="modal-header">
+            <h3 id="result-title">Результат реакции</h3>
+            <button class="close-btn" onclick="closeResultModal()">&times;</button>
+        </div>
+        <p id="result-text"></p>
+        <div class="video-container">
+            <video controls id="reaction-video">
+                Ваш браузер не поддерживает видео тег.
+            </video>
+        </div>
+    </div>
+
+    <!-- Окно справки -->
+    <div id="examples-modal" class="modal">
+        <div class="modal-header">
+            <h3>Примеры реакций</h3>
+            <button class="close-btn" onclick="closeExamples()">&times;</button>
+        </div>
+        <div class="examples-list">
+            <ol>
+                <li>KMnO₄ + H₂SO₄ + (CH₃)₂CHOH → 100°C → Гроза в колбе</li>
+                <li>Zn + HCl → H₂↑ (получение водорода)</li>
+                <li>AgNO₃ + NaCl → AgCl↓ (белый осадок)</li>
+                <li>KSCN + FeCl₃ → [Fe(SCN)]²⁺ (кроваво-красный)</li>
+                <li>CuSO₄·5H₂O → 100°C → CuSO₄ (белый) + 5H₂O</li>
+                <li>Mg + O₂ → 150°C → MgO (горение магния)</li>
+                <li>Na + H₂O₂ → Взрыв (бурная реакция)</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация переменных
+        let currentFlask = null;
+        let substances = {};
+        let temperature = 25;
+        let isHeating = false;
+        let actionHistory = [];
+        let heatInterval;
+        let currentVolume = 0;
+        const maxFlaskVolume = 50;
+        let currentReaction = null;
+        let isFlaskOnRing = false;
+        let zincPieces = [];
+        let emptyHeatingTime = 0;
+
+        // Информация о веществах (жидкость/твердое)
+        const substanceInfo = {
+            flask: { isLiquid: false },
+            KMnO4: { isLiquid: false },
+            H2SO4: { isLiquid: true },
+            isopropanol: { isLiquid: true },
+            Zn: { isLiquid: false },
+            HCl: { isLiquid: true },
+            AgNO3: { isLiquid: true },
+            NaCl: { isLiquid: true },
+            KSCN: { isLiquid: true },
+            FeCl3: { isLiquid: true },
+            CuSO4_hydrate: { isLiquid: false },
+            Mg: { isLiquid: false },
+            Na: { isLiquid: false },
+            H2O2: { isLiquid: true }
+        };
+
+        // Видео для реакций
+        const reactionVideos = {
+            'thunder_in_flask': "/static/video/thunder_in_flask.mp4",
+            'zinc_acid': '/static/video/zinc_acid.mp4',
+            'agcl_precipitate': '/static/video/agcl_precipitate.mp4',
+            'blood_red': '/static/video/blood_red.mp4',
+            'dehydration': '/static/video/dehydration.mp4',
+            'magnesium_burn': '/static/video/magnesium_burn.mp4',
+            'sodium_peroxide': '/static/video/sodium_peroxide.mp4'
+        };
+
+        // Показ инструктажа по безопасности при загрузке
+        window.onload = function() {
+            document.getElementById('safety-modal').style.display = 'block';
+            document.getElementById('safety-modal-overlay').style.display = 'block';
+            updateThermometer();
+            enableModalDragging();
+        };
+
+        // Показать уведомление
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Обновление термометра
+        function updateThermometer() {
+            const fill = document.getElementById('thermometer-fill');
+            const height = Math.min(100, (temperature / 500) * 100);
+            fill.style.height = `${height}%`;
+            document.getElementById('temperature').textContent = `${Math.round(temperature)}°C`;
+        }
+
+        // Закрытие модальных окон
+        function closeSafetyModal() {
+            document.getElementById('safety-modal').style.display = 'none';
+            document.getElementById('safety-modal-overlay').style.display = 'none';
+        }
+
+        function closeResultModal() {
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        function closeExamples() {
+            document.getElementById('examples-modal').style.display = 'none';
+        }
+
+        // Обработчики событий
+        document.addEventListener('dragstart', e => {
+            if (e.target.classList.contains('draggable')) {
+                e.dataTransfer.setData('text/plain', e.target.dataset.type);
+            }
+            if (e.target.classList.contains('flask')) {
+                e.dataTransfer.setData('text/plain', 'flask');
+            }
+        });
+
+        document.getElementById('bench').addEventListener('dragover', e => e.preventDefault());
+
+        document.getElementById('bench').addEventListener('drop', e => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('text/plain');
+
+            if (type === 'flask' && !currentFlask) {
+                createFlask(e.clientX, e.clientY);
+                recordAction('createFlask');
+            }
+        });
+
+        // Создание колбы
+        function createFlask(x, y) {
+            currentFlask = document.createElement('div');
+            currentFlask.className = 'flask';
+            currentFlask.dataset.type = 'flask';
+            currentFlask.style.left = `${x - 30}px`;
+            currentFlask.style.top = `${y - 50}px`;
+            currentFlask.draggable = true;
+            isFlaskOnRing = false;
+            emptyHeatingTime = 0;
+
+            currentFlask.addEventListener('dragover', e => e.preventDefault());
+
+            currentFlask.addEventListener('drop', e => {
+                e.preventDefault();
+                const type = e.dataTransfer.getData('text/plain');
+                if (type !== 'flask') {
+                    addSubstance(type);
+                }
+            });
+
+            currentFlask.addEventListener('dragstart', () => {
+                currentFlask.classList.add('dragging');
+            });
+
+            currentFlask.addEventListener('dragend', (e) => {
+                const rect = document.getElementById('bench').getBoundingClientRect();
+                const newX = e.clientX - rect.left - 30;
+                const newY = e.clientY - rect.top - 50;
+
+                currentFlask.style.left = `${newX}px`;
+                currentFlask.style.top = `${newY}px`;
+                currentFlask.classList.remove('dragging');
+                
+                // Проверка закрепления на кольце
+                checkFlaskOnRing();
+                
+                recordAction('moveFlask');
+            });
+
+            document.getElementById('bench').appendChild(currentFlask);
+        }
+
+        function checkFlaskOnRing() {
+            if (!currentFlask) return;
+            
+            const bench = document.getElementById('bench');
+            const ring = document.getElementById('tripod-ring');
+            const burner = document.getElementById('burner');
+            const flaskRect = currentFlask.getBoundingClientRect();
+            const ringRect = ring.getBoundingClientRect();
+            const benchRect = bench.getBoundingClientRect();
+            const burnerRect = burner.getBoundingClientRect();
+            
+            // Переводим координаты в систему отсчета bench
+            const ringCenterX = ringRect.left - benchRect.left + ringRect.width/2;
+            const ringTop = ringRect.top - benchRect.top;
+            
+            const flaskCenterX = flaskRect.left - benchRect.left + flaskRect.width/2;
+            const flaskBottom = flaskRect.bottom - benchRect.top;
+            const flaskHeight = flaskRect.height;
+            
+            // Проверка расстояния
+            const distX = Math.abs(flaskCenterX - ringCenterX);
+            const verticalDist = flaskBottom - ringTop;
+            
+            const MAX_DIST_X = 40;
+            const MAX_VERTICAL_DIST = 50;
+            
+            if (distX < MAX_DIST_X && verticalDist > -MAX_VERTICAL_DIST && verticalDist < MAX_VERTICAL_DIST) {
+                const burnerCenterX = burnerRect.left - benchRect.left + burnerRect.width/2;
+                const newLeft = burnerCenterX - flaskRect.width/2;
+                const newTop = ringTop - flaskHeight * 0.4; 
+                
+                currentFlask.style.position = 'absolute';
+                currentFlask.style.top = `${newTop}px`;
+                currentFlask.style.left = `${newLeft}px`;
+                isFlaskOnRing = true;
+                
+                currentFlask.style.transition = 'top 0.3s ease, left 0.3s ease';
+                setTimeout(() => {
+                    currentFlask.style.transition = '';
+                }, 300);
+            } else {
+                isFlaskOnRing = false;
+            }
+        }
+
+        // Добавление вещества
+        function addSubstance(type) {
+            const isLiquid = substanceInfo[type]?.isLiquid || false;
+            const unit = isLiquid ? 'мл' : 'г';
+            const amount = prompt(`Введите количество ${unit} для ${type}:`, "10");
+            
+            if (!amount || isNaN(amount)) return;
+            
+            const numericAmount = parseFloat(amount);
+            
+            // Проверка объема колбы
+            const addedVolume = isLiquid ? numericAmount : numericAmount;
+            if (currentVolume + addedVolume > maxFlaskVolume) {
+                showNotification(`Колба переполнена! Максимальный объем: ${maxFlaskVolume} мл`);
+                return;
+            }
+            
+            currentVolume += addedVolume;
+            currentReaction = null; // Сброс текущей реакции
+            
+            if (!substances[type]) substances[type] = 0;
+            substances[type] += numericAmount;
+
+            // Добавление визуализации цинка
+            if (type === 'Zn') {
+                createZincPieces(numericAmount);
+            }
+            
+            updateLiquidLevel();
+            recordAction('addSubstance', { type, amount: numericAmount });
+            
+            // Проверка реакций, не требующих нагрева
+            checkRoomTemperatureReactions();
+        }
+        
+        // Создание кусочков цинка
+        function createZincPieces(amount) {
+            if (!currentFlask) return;
+            
+            // Удаляем старые кусочки
+            zincPieces.forEach(piece => piece.remove());
+            zincPieces = [];
+            
+            // Создаем новые кусочки
+            const pieceCount = Math.min(20, Math.floor(amount / 2) + 5);
+            for (let i = 0; i < pieceCount; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'zinc-piece';
+                
+                const size = 5 + Math.random() * 8;
+                piece.style.width = `${size}px`;
+                piece.style.height = `${size}px`;
+                
+                piece.style.left = `${10 + Math.random() * 80}%`;
+                piece.style.bottom = `${5 + Math.random() * 10}%`;
+                
+                currentFlask.appendChild(piece);
+                zincPieces.push(piece);
+            }
+        }
+        
+        // Анимация растворения цинка
+        function dissolveZincPieces() {
+            if (zincPieces.length === 0) return;
+            
+            zincPieces.forEach((piece, index) => {
+                setTimeout(() => {
+                    piece.style.animation = `dissolve ${1 + Math.random()}s forwards`;
+                    setTimeout(() => {
+                        if (piece.parentNode) {
+                            piece.remove();
+                        }
+                    }, 1000 + Math.random() * 1000);
+                }, index * 200);
+            });
+            
+            zincPieces = [];
+        }
+
+        // Обновление уровня жидкости
+        function updateLiquidLevel() {
+            if (!currentFlask) return;
+            
+            // Удаляем старые жидкости
+            const oldLiquids = currentFlask.querySelectorAll('.liquid');
+            oldLiquids.forEach(l => l.remove());
+            
+            // Рассчитываем высоту для каждого вещества
+            const flaskHeight = 100;
+            const levelPercentage = (currentVolume / maxFlaskVolume) * 90;
+            
+            // Создаем новый слой жидкости
+            const liquid = document.createElement('div');
+            liquid.className = 'liquid';
+            liquid.style.height = `${levelPercentage}%`;
+            
+            // Определяем цвет смеси
+            let color = '#cccccc'; // серый по умолчанию
+            
+            if (substances['KMnO4']) {
+                color = '#6a0dad'; // фиолетовый
+            } else if (substances['FeCl3']) {
+                color = '#fecc5c'; // желтый
+            } else if (substances['CuSO4_hydrate']) {
+                color = '#0077be'; // синий
+            } else if (substances['AgNO3']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['NaCl']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['KSCN']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['H2SO4']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['isopropanol']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['HCl']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            } else if (substances['H2O2']) {
+                color = 'rgba(200, 230, 255, 0.5)'; // легкий голубой
+            }
+            
+            liquid.style.backgroundColor = color;
+            currentFlask.appendChild(liquid);
+        }
+
+        // Управление горелкой
+        document.getElementById('toggleBurner').addEventListener('click', () => {
+            if (isHeating) {
+                isHeating = false;
+                document.getElementById('toggleBurner').textContent = 'Включить горелку';
+                document.getElementById('flame').style.opacity = '0';
+                clearInterval(heatInterval);
+                return;
+            }
+            
+            if (!isFlaskOnRing) {
+                showNotification("Установите колбу на держатель!");
+                return;
+            }
+            
+            if (temperature >= 300) {
+                showNotification('Превышена максимальная температура! Горелка отключена.');
+                return;
+            }
+            
+            isHeating = true;
+            document.getElementById('toggleBurner').textContent = 'Выключить горелку';
+            document.getElementById('flame').style.opacity = '1';
+            heatInterval = setInterval(heat, 200);
+        });
+
+        // Нагрев (увеличена скорость нагрева в 4 раза)
+        function heat() {
+            if (temperature < 500) temperature += 2; // Было 0.5, теперь 2
+            updateThermometer();
+            
+            // Проверка пустой колбы
+            if (currentFlask && currentVolume === 0) {
+                emptyHeatingTime += 0.2;
+                if (temperature >= 250 && emptyHeatingTime > 3) {
+                    breakEmptyFlask();
+                }
+            } else {
+                emptyHeatingTime = 0;
+            }
+            
+            if (temperature >= 300) {
+                isHeating = false;
+                clearInterval(heatInterval);
+                document.getElementById('toggleBurner').textContent = 'Включить горелку';
+                document.getElementById('flame').style.opacity = '0';
+                showNotification('Достигнута максимальная температура! Горелка отключена.');
+            }
+            
+            checkAutomaticReactions();
+        }
+        
+        // Разрушение пустой колбы
+        function breakEmptyFlask() {
+            if (!currentFlask) return;
+            
+            // Отключаем горелку
+            isHeating = false;
+            clearInterval(heatInterval);
+            document.getElementById('toggleBurner').textContent = 'Включить горелку';
+            document.getElementById('flame').style.opacity = '0';
+            
+            // Создаем трещины
+            const crack = document.createElement('div');
+            crack.className = 'crack';
+            
+            const crackCount = 5 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < crackCount; i++) {
+                const crackLine = document.createElement('div');
+                crackLine.className = 'crack-line';
+                crackLine.style.height = '2px';
+                crackLine.style.width = '0';
+                crackLine.style.left = `${Math.random() * 100}%`;
+                crackLine.style.top = `${Math.random() * 100}%`;
+                crackLine.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                crack.appendChild(crackLine);
+                
+                // Анимация появления трещины
+                setTimeout(() => {
+                    crackLine.style.width = `${20 + Math.random() * 80}%`;
+                    crackLine.style.opacity = '1';
+                    crackLine.style.animation = 'crackAppear 0.5s forwards';
+                }, i * 200);
+            }
+            
+            currentFlask.appendChild(crack);
+            
+            // Анимация разрушения
+            setTimeout(() => {
+                currentFlask.style.animation = 'breakFlask 1s forwards';
+                
+                // Удаление колбы после анимации
+                setTimeout(() => {
+                    if (currentFlask && currentFlask.parentNode) {
+                        currentFlask.remove();
+                        currentFlask = null;
+                        currentVolume = 0;
+                        substances = {};
+                        isFlaskOnRing = false;
+                        showNotification('Пустая колба перегрелась и треснула!');
+                    }
+                }, 1000);
+            }, 500);
+        }
+
+        // Проверка реакций при комнатной температуре
+        function checkRoomTemperatureReactions() {
+            if (!currentFlask) return;
+            
+            // Реакция цинка с кислотой
+            if (checkReaction(['Zn', 'HCl'], 25, 5)) {
+                showZincAcidEffect();
+                currentReaction = 'zinc_acid';
+            }
+            // Осадок AgCl
+            else if (checkReaction(['AgNO3', 'NaCl'], 25, 5)) {
+                showAgClPrecipitate();
+                currentReaction = 'agcl_precipitate';
+            }
+            // Кровавый цвет
+            else if (checkReaction(['KSCN', 'FeCl3'], 25, 5)) {
+                showBloodRedEffect();
+                currentReaction = 'blood_red';
+            }
+            // Натрий + перекись
+            else if (checkReaction(['Na', 'H2O2'], 25, 1)) {
+                showSodiumPeroxideEffect();
+                currentReaction = 'sodium_peroxide';
+            }
+        }
+
+        // Проверка автоматических реакций (изменены температуры)
+        function checkAutomaticReactions() {
+            if (!currentFlask || !isFlaskOnRing) return;
+            
+            // Гроза в колбе (температура снижена до 100)
+            if (checkReaction(['KMnO4', 'H2SO4', 'isopropanol'], 100, 5)) {
+                showThunderEffect();
+                currentReaction = 'thunder_in_flask';
+            }
+            // Обезвоживание (температура снижена до 100)
+            else if (checkReaction(['CuSO4_hydrate'], 100, 10)) {
+                showDehydrationEffect();
+                currentReaction = 'dehydration';
+            }
+            // Горение магния (температура снижена до 150)
+            else if (checkReaction(['Mg'], 150, 1)) {
+                showMagnesiumBurn();
+                currentReaction = 'magnesium_burn';
+            }
+        }
+
+        // Кнопка информации о реакции
+        document.getElementById('infoBtn').addEventListener('click', () => {
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('result-title');
+            const text = document.getElementById('result-text');
+            const video = document.getElementById('reaction-video');
+            const videoContainer = document.querySelector('.video-container');
+            
+            if (currentReaction) {
+                modal.classList.remove('smaller', 'no-video');
+                text.classList.remove('no-reaction-text');
+                videoContainer.style.display = 'block';
+                showReactionInfo(currentReaction);
+            } else {
+                modal.classList.add('smaller', 'no-video');
+                text.classList.add('no-reaction-text');
+                videoContainer.style.display = 'none';
+                
+                title.textContent = "Реакция не произошла";
+                text.innerHTML = 
+                    "Реакция еще не произошла. Проверьте условия:\n\n" +
+                    "• Убедитесь, что колба установлена на держателе\n" +
+                    "• Проверьте правильность выбранных реагентов\n" +
+                    "• Убедитесь, что температура достаточна для реакции\n" +
+                    "• Проверьте, что в колбе есть необходимые вещества\n" +
+                    "• Включите горелку для нагрева колбы\n\n" +
+                    "<strong>Рекомендации:</strong>\n" +
+                    "- Используйте кнопку 'Справка' для примеров реакций\n" +
+                    "- Убедитесь, что не превышен объем колбы (50 мл)";
+                video.src = '';
+                modal.style.display = 'block';
+            }
+        });
+
+        // Показ информации о реакции
+        function showReactionInfo(reactionType) {
+            let title, text, videoUrl;
+            
+            switch(reactionType) {
+                case 'thunder_in_flask':
+                    title = "Гроза в колбе";
+                    text = "При взаимодействии KMnO₄ с H₂SO₄ образуется оксид марганца(VII), который окисляет изопропиловый спирт до ацетона. Затем ацетон воспламеняется оксидом марганца(VII), создавая эффект грозы.";
+                    videoUrl = reactionVideos.thunder_in_flask;
+                    break;
+                    
+                case 'zinc_acid':
+                    title = "Получение водорода";
+                    text = "Zn + 2HCl → ZnCl₂ + H₂↑\nРеакция цинка с соляной кислотой - лабораторный метод получения водорода. Цинк растворяется с выделением газообразного водорода.";
+                    videoUrl = reactionVideos.zinc_acid;
+                    break;
+                    
+                case 'agcl_precipitate':
+                    title = "Образование осадка AgCl";
+                    text = "AgNO₃ + NaCl → AgCl↓ + NaNO₃\nРеакция двойного обмена с образованием белого творожистого осадка хлорида серебра.";
+                    videoUrl = reactionVideos.agcl_precipitate;
+                    break;
+                    
+                case 'blood_red':
+                    title = "Кроваво-красный комплекс";
+                    text = "FeCl₃ + KSCN → [Fe(SCN)]²⁺ + 3Cl⁻\nОбразование роданида железа(III) - комплекса с характерным кроваво-красным окрашиванием.";
+                    videoUrl = reactionVideos.blood_red;
+                    break;
+                    
+                case 'dehydration':
+                    title = "Обезвоживание медного купороса";
+                    text = "CuSO₄·5H₂O → CuSO₄ + 5H₂O\nПри нагревании голубой кристаллогидрат теряет воду, превращаясь в белый безводный сульфат меди.";
+                    videoUrl = reactionVideos.dehydration;
+                    break;
+                    
+                case 'magnesium_burn':
+                    title = "Горение магния";
+                    text = "2Mg + O₂ → 2MgO\nМагний сгорает на воздухе с образованием оксида магния, сопровождается яркой вспышкой.";
+                    videoUrl = reactionVideos.magnesium_burn;
+                    break;
+                    
+                case 'sodium_peroxide':
+                    title = "Реакция натрия с перекисью";
+                    text = "2Na + H₂O₂ → 2NaOH + H₂↑\nБурная реакция с выделением водорода, который может воспламениться.";
+                    videoUrl = reactionVideos.sodium_peroxide;
+                    break;
+                    
+                default:
+                    title = "Реакция";
+                    text = "Информация о реакции";
+                    videoUrl = "";
+            }
+            
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-text').textContent = text;
+            document.getElementById('reaction-video').src = videoUrl;
+            document.getElementById('result-modal').style.display = 'block';
+        }
+
+        // Проверка условий реакции
+        function checkReaction(requiredSubstances, minTemp, minAmount = 0) {
+            return requiredSubstances.every(s =>
+                substances[s] >= minAmount
+            ) && temperature >= minTemp;
+        }
+
+        // Сброс эксперимента
+        function resetExperiment() {
+            temperature = 25;
+            isHeating = false;
+            currentVolume = 0;
+            substances = {};
+            currentReaction = null;
+            isFlaskOnRing = false;
+            emptyHeatingTime = 0;
+            clearInterval(heatInterval);
+            updateThermometer();
+            
+            document.getElementById('toggleBurner').textContent = 'Включить горелку';
+            document.getElementById('flame').style.opacity = '0';
+
+            if (currentFlask) {
+                currentFlask.remove();
+                currentFlask = null;
+            }
+            
+            zincPieces.forEach(piece => piece.remove());
+            zincPieces = [];
+            
+            actionHistory = [];
+        }
+
+        // Кнопка очистки стола
+        document.getElementById('reset').addEventListener('click', resetExperiment);
+
+        // Отмена действия
+        document.getElementById('undo').addEventListener('click', () => {
+            if (actionHistory.length === 0) return;
+
+            const lastAction = actionHistory.pop();
+            const prevState = lastAction.state;
+
+            substances = { ...prevState.substances };
+            temperature = prevState.temperature;
+            currentVolume = prevState.currentVolume;
+            isFlaskOnRing = prevState.isFlaskOnRing;
+            currentReaction = prevState.currentReaction;
+            emptyHeatingTime = prevState.emptyHeatingTime || 0;
+            
+            updateThermometer();
+
+            if (currentFlask && prevState.flaskPosition) {
+                currentFlask.style.left = `${prevState.flaskPosition.left}px`;
+                currentFlask.style.top = `${prevState.flaskPosition.top}px`;
+            }
+
+            if (currentFlask) {
+                updateLiquidLevel();
+                
+                // Восстановление цинка
+                if (substances['Zn'] && substances['Zn'] > 0) {
+                    createZincPieces(substances['Zn']);
+                }
+            }
+
+            if (lastAction.type === 'createFlask') {
+                currentFlask.remove();
+                currentFlask = null;
+                substances = {};
+                currentVolume = 0;
+                isFlaskOnRing = false;
+                currentReaction = null;
+                emptyHeatingTime = 0;
+            }
+        });
+
+        // Запись действия
+        function recordAction(type, data) {
+            actionHistory.push({
+                type,
+                data,
+                state: JSON.parse(JSON.stringify({
+                    substances,
+                    temperature,
+                    currentVolume,
+                    flaskPosition: currentFlask?.getBoundingClientRect(),
+                    isFlaskOnRing,
+                    currentReaction,
+                    emptyHeatingTime
+                }))
+            });
+        }
+
+        // Анимации реакций
+        function showThunderEffect() {
+            // Дым
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const smoke = document.createElement('div');
+                    smoke.style.width = `${20 + Math.random() * 30}px`;
+                    smoke.style.height = `${20 + Math.random() * 30}px`;
+                    smoke.style.background = 'rgba(100,100,100,0.4)';
+                    smoke.style.borderRadius = '50%';
+                    smoke.style.position = 'absolute';
+                    smoke.style.left = `calc(50% - ${20 + Math.random() * 10}px)`;
+                    smoke.style.bottom = '0';
+                    smoke.style.animation = `smokeRise ${3 + Math.random() * 2}s linear forwards`;
+                    currentFlask.appendChild(smoke);
+                    setTimeout(() => smoke.remove(), 5000);
+                }, i * 200);
+            }
+
+            // Искры (молнии)
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const spark = document.createElement('div');
+                    spark.style.width = '5px';
+                    spark.style.height = `${10 + Math.random() * 20}px`;
+                    spark.style.background = 'white';
+                    spark.style.position = 'absolute';
+                    spark.style.left = `${10 + Math.random() * 80}%`;
+                    spark.style.bottom = `${10 + Math.random() * 70}%`;
+                    spark.style.opacity = '0.8';
+                    spark.style.animation = 'thunderFlash 0.5s forwards';
+                    currentFlask.appendChild(spark);
+                    setTimeout(() => spark.remove(), 500);
+                }, i * 300);
+            }
+        }
+
+        function showZincAcidEffect() {
+            // Анимация растворения цинка
+            dissolveZincPieces();
+            
+            // Пузырьки газа
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const bubble = document.createElement('div');
+                    const size = 5 + Math.random() * 10;
+                    bubble.style.width = `${size}px`;
+                    bubble.style.height = `${size}px`;
+                    bubble.style.background = 'rgba(255,255,255,0.7)';
+                    bubble.style.borderRadius = '50%';
+                    bubble.style.position = 'absolute';
+                    bubble.style.left = `calc(50% - ${size/2}px + ${Math.random() * 20 - 10}px)`;
+                    bubble.style.bottom = '0';
+                    bubble.style.animation = `bubbleUp ${0.5 + Math.random() * 0.5}s ease-out forwards`;
+                    currentFlask.appendChild(bubble);
+                    setTimeout(() => bubble.remove(), 1000);
+                }, i * 80);
+            }
+        }
+
+        function showAgClPrecipitate() {
+            const precipitate = document.createElement('div');
+            precipitate.style.width = '90%';
+            precipitate.style.height = '0';
+            precipitate.style.background = 'white';
+            precipitate.style.borderRadius = '10px 10px 0 0';
+            precipitate.style.position = 'absolute';
+            precipitate.style.bottom = '0';
+            precipitate.style.left = '5%';
+            precipitate.style.opacity = '0';
+            precipitate.style.animation = 'precipitateForm 2s forwards';
+            currentFlask.appendChild(precipitate);
+        }
+    
+        function showBloodRedEffect() {
+            const liquid = currentFlask.querySelector('.liquid');
+            if (liquid) {
+                liquid.style.backgroundColor = '#ff0000';
+            }
+        }
+
+        function showDehydrationEffect() {
+            const liquid = currentFlask.querySelector('.liquid');
+            if (liquid) {
+                liquid.style.transition = 'background 2s';
+                liquid.style.backgroundColor = '#ffffff';
+
+                // Капли на стенках
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const drop = document.createElement('div');
+                        drop.style.width = '5px';
+                        drop.style.height = '5px';
+                        drop.style.background = 'rgba(100,100,255,0.5)';
+                        drop.style.borderRadius = '50%';
+                        drop.style.position = 'absolute';
+                        drop.style.left = `${5 + Math.random() * 90}%`;
+                        drop.style.top = `${20 + Math.random() * 60}%`;
+                        drop.style.animation = `dropFall 2s linear forwards`;
+                        currentFlask.appendChild(drop);
+                        setTimeout(() => drop.remove(), 2000);
+                    }, i * 200);
+                }
+            }
+        }
+    
+        function showMagnesiumBurn() {
+            // Вспышка
+            const flash = document.createElement('div');
+            flash.style.position = 'absolute';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.background = 'radial-gradient(circle, white, yellow)';
+            flash.style.opacity = '0.8';
+            flash.style.animation = 'flashOut 0.5s forwards';
+            currentFlask.appendChild(flash);
+
+            // Дым
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const smoke = document.createElement('div');
+                    smoke.style.width = `${20 + Math.random() * 20}px`;
+                    smoke.style.height = `${20 + Math.random() * 20}px`;
+                    smoke.style.background = 'rgba(200,200,200,0.7)';
+                    smoke.style.borderRadius = '50%';
+                    smoke.style.position = 'absolute';
+                    smoke.style.left = `calc(50% - ${10 + Math.random() * 10}px)`;
+                    smoke.style.top = '0';
+                    smoke.style.animation = `smokeRise ${2 + Math.random()}s linear forwards`;
+                    currentFlask.appendChild(smoke);
+                    setTimeout(() => smoke.remove(), 3000);
+                }, i * 150);
+            }
+
+            setTimeout(() => {
+                flash.remove();
+            }, 500);
+        }
+    
+        function showSodiumPeroxideEffect() {
+            // Пузырьки
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const bubble = document.createElement('div');
+                    const size = 5 + Math.random() * 10;
+                    bubble.style.width = `${size}px`;
+                    bubble.style.height = `${size}px`;
+                    bubble.style.background = 'rgba(255,255,255,0.7)';
+                    bubble.style.borderRadius = '50%';
+                    bubble.style.position = 'absolute';
+                    bubble.style.left = `calc(50% - ${size/2}px + ${Math.random() * 20 - 10}px)`;
+                    bubble.style.bottom = '0';
+                    bubble.style.animation = `bubbleUp ${0.3 + Math.random() * 0.2}s ease-out forwards`;
+                    currentFlask.appendChild(bubble);
+                    setTimeout(() => bubble.remove(), 1000);
+                }, i * 40);
+            }
+
+            // Искры (увеличено количество)
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const spark = document.createElement('div');
+                    spark.style.width = `${2 + Math.random() * 6}px`;
+                    spark.style.height = `${2 + Math.random() * 6}px`;
+                    spark.style.background = 'radial-gradient(circle, #ffff00, #ff5500)';
+                    spark.style.borderRadius = '50%';
+                    spark.style.position = 'absolute';
+                    spark.style.left = `${20 + Math.random() * 60}%`;
+                    spark.style.bottom = `${20 + Math.random() * 60}%`;
+                    spark.style.animation = `sparkle 0.5s forwards`;
+                    spark.style.zIndex = '20';
+                    currentFlask.appendChild(spark);
+                    setTimeout(() => spark.remove(), 500);
+                }, i * 50);
+            }
+
+            // Дым (увеличено количество)
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const smoke = document.createElement('div');
+                    smoke.style.width = `${20 + Math.random() * 40}px`;
+                    smoke.style.height = `${20 + Math.random() * 40}px`;
+                    smoke.style.background = 'rgba(100,100,100,0.5)';
+                    smoke.style.borderRadius = '50%';
+                    smoke.style.position = 'absolute';
+                    smoke.style.left = `calc(50% - ${20 + Math.random() * 20}px)`;
+                    smoke.style.bottom = '0';
+                    smoke.style.animation = `smokeRise ${4 + Math.random() * 2}s linear forwards`;
+                    currentFlask.appendChild(smoke);
+                    setTimeout(() => smoke.remove(), 6000);
+                }, i * 80);
+            }
+
+            // Взрыв (усилен)
+            setTimeout(() => {
+                const flash = document.createElement('div');
+                flash.style.position = 'absolute';
+                flash.style.top = '0';
+                flash.style.left = '0';
+                flash.style.width = '100%';
+                flash.style.height = '100%';
+                flash.style.background = 'radial-gradient(circle, white, yellow, orange, red)';
+                flash.style.opacity = '0.9';
+                flash.style.animation = 'flashExpand 0.3s forwards';
+                flash.style.zIndex = '25';
+                currentFlask.appendChild(flash);
+
+                currentFlask.style.animation = 'shake 0.5s';
+
+                // Осколки колбы (увеличено количество)
+                const bench = document.getElementById('bench');
+                const flaskRect = currentFlask.getBoundingClientRect();
+                const centerX = flaskRect.left + flaskRect.width / 2;
+                const centerY = flaskRect.top + flaskRect.height / 2;
+
+                for (let i = 0; i < 30; i++) {
+                    const fragment = document.createElement('div');
+                    const size = 10 + Math.random() * 30;
+                    fragment.style.width = `${size}px`;
+                    fragment.style.height = `${size}px`;
+                    fragment.style.background = `rgba(255, 255, 255, ${0.8 + Math.random() * 0.2})`;
+                    fragment.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
+                    fragment.style.position = 'fixed';
+                    fragment.style.left = `${centerX}px`;
+                    fragment.style.top = `${centerY}px`;
+                    fragment.style.zIndex = '1000';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 100 + Math.random() * 300;
+                    const duration = 0.5 + Math.random() * 0.5;
+                    
+                    fragment.style.setProperty('--end-x', `${Math.cos(angle) * distance}px`);
+                    fragment.style.setProperty('--end-y', `${Math.sin(angle) * distance}px`);
+                    fragment.style.animation = `fragmentFly ${duration}s ease-out forwards`;
+                    
+                    bench.appendChild(fragment);
+                    
+                    setTimeout(() => {
+                        fragment.remove();
+                    }, duration * 1000);
+                }
+
+                setTimeout(() => {
+                    flash.remove();
+                    if (currentFlask) {
+                        currentFlask.remove();
+                        currentFlask = null;
+                        currentVolume = 0;
+                        substances = {};
+                        isFlaskOnRing = false;
+                    }
+                }, 500);
+            }, 1500);
+        }
+
+        // Показать примеры реакций
+        function showExamples() {
+            document.getElementById('examples-modal').style.display = 'block';
+        }
+
+        // Закрытие модальных окон при клике вне их
+        window.onclick = e => {
+            if (e.target.className === 'modal') {
+                closeSafetyModal();
+                closeResultModal();
+                closeExamples();
+            }
+        }
+        
+        // Функция для включения перетаскивания модальных окон
+        function enableModalDragging() {
+            const modals = document.querySelectorAll('.modal');
+            
+            modals.forEach(modal => {
+                const header = modal.querySelector('.modal-header');
+                if (!header) return;
+                
+                header.addEventListener('mousedown', function(e) {
+                    const rect = modal.getBoundingClientRect();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startLeft = rect.left;
+                    const startTop = rect.top;
+                    
+                    modal.style.transform = 'none';
+                    modal.style.left = `${startLeft}px`;
+                    modal.style.top = `${startTop}px`;
+                    
+                    function drag(e) {
+                        const dx = e.clientX - startX;
+                        const dy = e.clientY - startY;
+                        modal.style.left = (startLeft + dx) + 'px';
+                        modal.style.top = (startTop + dy) + 'px';
+                    }
+                    
+                    function stopDrag() {
+                        document.removeEventListener('mousemove', drag);
+                        document.removeEventListener('mouseup', stopDrag);
+                    }
+                    
+                    document.addEventListener('mousemove', drag);
+                    document.addEventListener('mouseup', stopDrag);
+                    e.preventDefault();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
